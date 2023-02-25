@@ -1,0 +1,329 @@
+/*Macros that was written to take data from unsorted lists from the delivery & contract forecasts in Baan LN, remove empty cells, sort data for each part onto its respective worksheet, then sort by delivery date*/   
+
+Public Sub Techlink_containers(ByVal rowCount As Integer, ByVal ffPart As Range, ByVal tlsNumb As Range, ByVal sheetName As String, ByVal contCol As Integer, ByVal tlsCol As Integer)
+'Populates Container qty and TLS numbers on each techlink tab
+
+    Sheets(sheetName).Cells(rowCount, contCol).Value = ffPart.Value
+    Sheets(sheetName).Cells(rowCount, tlsCol).Value = tlsNumb.Value
+        
+End Sub
+
+Public Sub Data(ByVal sheetName As String, ByVal rowCounter As Integer, ByVal ffpn As String, ByVal bppn As String, ByVal pdd As Date, ByVal soldto As String, ByVal shipto As String, ByVal cord As String, ByVal ord As String, ByVal qty As Integer)
+'Populates contract and delivery forecast data onto each sheet
+
+    Dim infoArray As Variant
+    Dim colCount As Integer
+
+    infoArray = Array(sheetName, rowCounter, ffpn, bppn, pdd, soldto, shipto, cord, ord, qty)
+    
+    For colCount = 1 To 8
+        Sheets(infoArray(0)).Cells(infoArray(1), colCount) = infoArray(colCount + 1)
+    Next colCount
+   
+End Sub
+
+Public Sub Receipt_Data(ByVal sheetName As String, ByVal rowCount As Integer, ByVal ffpn As String, ByVal bppn As String, ByVal eta As Variant, ByVal qty As String, ByVal allCol As Integer, Optional ByVal dynCol As Variant, Optional ByVal pacCol As Variant)
+    Dim arrayOne As Variant
+    Dim colCount As Integer
+    
+    arrayOne = Array(sheetName, rowCount, ffpn, bppn, eta, "FLEXFAB", "RECEIPT", "xxxx", "xxxx")
+        
+        For colCount = 1 To 7
+            Sheets(arrayOne(0)).Cells(arrayOne(1), colCount) = arrayOne(colCount + 1)
+        Next colCount
+        
+    If IsNull(dynCol) Then
+        Sheets(sheetName).Cells(rowCount, allCol + 1) = qty
+    
+    Else
+        Sheets(sheetName).Cells(rowCount, allCol + 1) = qty
+        Sheets(sheetName).Cells(rowCount, dynCol + 1) = qty
+        Sheets(sheetName).Cells(rowCount, pacCol + 1) = qty
+        
+    End If
+End Sub
+
+Sub transfer_forecast_onto_tabs()
+'
+' transfer_forecast_onto_tabs Macro
+' transfer part numbers to respective tabs
+'
+' Keyboard Shortcut: Ctrl+q
+'
+
+    'Sort Delivery Forecast data
+    'row counter
+    Dim rowCounter As Integer
+    rowCounter = 2
+    
+    For dataCounter = 2 To 4000
+        Set ffpn = Sheets(1).Cells(dataCounter, 10)
+        Set bppn = Sheets(1).Cells(dataCounter, 11)
+        Set pdd = Sheets(1).Cells(dataCounter, 12)
+        Set soldto = Sheets(1).Cells(dataCounter, 13)
+        Set shipto = Sheets(1).Cells(dataCounter, 14)
+        Set cord = Sheets(1).Cells(dataCounter, 15)
+        Set ord = Sheets(1).Cells(dataCounter, 16)
+        Set qty = Sheets(1).Cells(dataCounter, 17)
+    
+        'copy and paste values
+        If Not (bppn = "                         ") Then
+            Sheets(1).Cells(rowCounter, 1).Value = Left(ffpn, 13)
+            Sheets(1).Cells(rowCounter, 2).Value = Left(bppn, 18)
+            Sheets(1).Cells(rowCounter, 3).Value = pdd.Value
+            Sheets(1).Cells(rowCounter, 4).Value = soldto.Value
+            Sheets(1).Cells(rowCounter, 5).Value = shipto.Value
+            Sheets(1).Cells(rowCounter, 6).Value = cord.Value
+            Sheets(1).Cells(rowCounter, 7).Value = ord.Value
+            Sheets(1).Cells(rowCounter, 8).Value = qty.Value
+            rowCounter = rowCounter + 1
+        End If
+    Next dataCounter
+
+Call Techlink
+
+End Sub
+
+Public Sub Techlink()
+    
+    'Row Counter for each tab
+    Dim rowCount(4) As Integer
+    Dim counter As Integer
+
+    For counter = 0 To 3
+        rowCount(counter) = 4
+    Next counter
+
+'Copy and paste techlink container qty and container info from Lists Sheet to each Techlink tab
+For techlinkListCounter = 3 To 51
+    Set tlsNumb = Sheets("Lists").Cells(techlinkListCounter, 11)
+    Set dyn1087p = Sheets("Lists").Cells(techlinkListCounter, 16)
+    Set dyn1090p = Sheets("Lists").Cells(techlinkListCounter, 17)
+    Set dyn1247p = Sheets("Lists").Cells(techlinkListCounter, 18)
+
+    'DYN1087
+    If Not (dyn1087p.Value = 0) Then
+        Techlink_containers rowCount(0), dyn1087p, tlsNumb, "DYN1087P PAC1087", 12, 13
+        rowCount(0) = rowCount(0) + 1
+    End If
+
+    'DYN1090
+    If Not (dyn1090p.Value = 0) Then
+        Techlink_containers rowCount(1), dyn1090p, tlsNumb, "DYN1090P PAC1090", 12, 13
+        rowCount(1) = rowCount(1) + 1
+    End If
+    
+    'DYN1247
+    If Not (dyn1247p.Value = 0) Then
+        Techlink_containers rowCount(2), dyn1247p, tlsNumb, "DYN1247P PAC1247", 12, 13
+        rowCount(2) = rowCount(2) + 1
+    End If
+    
+Next techlinkListCounter
+
+Call Proc1
+
+End Sub
+Public Sub Proc1()
+
+   Dim rowCounter(24), count, rCount As Integer
+    
+    'For loop for rowCounter that sets each one to 4
+    For count = 0 To 23
+        rowCounter(count) = 4
+    Next count
+    
+    For rCount = 0 To 23
+        
+            'For loop for contract forecast sheet rows
+            For conDataCount = 2 To 2500
+                'Cells on contract data sheet
+                Set conForePart = Sheets("Contract Forecast").Cells(conDataCount, 1)
+                Set conForeDate = Sheets("Contract Forecast").Cells(conDataCount, 3)
+                Set conForeQty = Sheets("Contract Forecast").Cells(conDataCount, 4)
+                Set dffpn = Sheets("Delivery Forecast").Cells(conDataCount, 1)
+                Set dbppn = Sheets("Delivery Forecast").Cells(conDataCount, 2)
+                Set dpdd = Sheets("Delivery Forecast").Cells(conDataCount, 3)
+                Set dsoldto = Sheets("Delivery Forecast").Cells(conDataCount, 4)
+                Set dshipto = Sheets("Delivery Forecast").Cells(conDataCount, 5)
+                Set dcord = Sheets("Delivery Forecast").Cells(conDataCount, 6)
+                Set dord = Sheets("Delivery Forecast").Cells(conDataCount, 7)
+                Set dqty = Sheets("Delivery Forecast").Cells(conDataCount, 8)
+                
+                'Arrays for each piece of part information
+                Dim sheetName, ffpn, pacffpn, bppn, soldto, shipto, cord, ord, sheetNameString, ffpnString, pacffpnString, bppnString As String
+                Dim pdd() As Date
+                                
+                'sheet names (24)
+                sheetNameString = "DYN1087P PAC1087,DYN1090P PAC1090,DYN1247P PAC1247,DYN1123P PAC1123,DYN1126P PAC1126,DYN1134P PAC1134,DYN1255P PAC1255," _
+                                     & "DYN1272P PAC1272,DYN1274P PAC1274,DYN1324P PAC1324,DYN1354P PAC1354,DYN1358P PAC1358,DYN1359P PAC1359,DYN1366P PAC1366," _
+                                     & "DYN1372P PAC1372,DYN1378P PAC1378,DYN1380P PAC1380,DYN1383P PAC1383,DYN1384P PAC1384,DYN1393P PAC1393,DYN1415P PAC1415," _
+                                     & "DYN1428P PAC1428,DYN1442P PAC1442,DYN3003P PAC3003"
+                sheetName = Split(sheetNameString, ",")
+                
+                'flexfab part numbers (24)
+                ffpnString = "DYN1087,DYN1090,DYN1247,DYN1123,DYN1126,DYN1134,DYN1255,DYN1272,DYN1274,DYN1324,DYN1354,DYN1358,DYN1359,DYN1366,DYN1372,DYN1378," _
+                            & "DYN1380,DYN1383,DYN1384,DYN1393,DYN1415,DYN1428,DYN1442,DYN3003"
+                ffpn = Split(ffpnString, ",")
+                
+                'flexfab PAC part numbers (24)
+                pacffpnString = "PAC1087,PAC1090,PAC1247,PAC1123,PAC1126,PAC1134,PAC1255,PAC1272,PAC1274,PAC1324,PAC1354,PAC1358,PAC1359,PAC1366,PAC1372,PAC1378," _
+                            & "PAC1380,PAC1383,PAC1384,PAC1393,PAC1415,PAC1428,PAC1442,PAC3003"
+                pacffpn = Split(pacffpnString, ",")
+                
+                'business partner part numbers
+                bppnString = "F50-6308,F04-6006,V50-1432,V50-1041-190140,F50-1548,V50-1047-100200100,V50-1474,V50-6083-070600,F50-1164,V50-1533," _
+                            & "V50-1710,D50-1110,V50-1534,F50-2116,D50-1115,V50-1705,F50-2217,D50-1108,D50-1135,F50-2307-1,F50-2214,F50-2339,F50-2362,K342-734"
+                bppn = Split(bppnString, ",")
+                
+                'qty cols
+                qtyCol = Array(12, 12, 12, 13, 13, 19, 19, 19, 13, 19, 19, 19, 13, 19, 19, 13, 13, 13, 13, 13, 19, 13, 19, 19)
+                
+                'all receipts cols
+                allCol = Array(9, 9, 9, 9, 9, 15, 15, 15, 9, 15, 15, 15, 9, 15, 15, 9, 9, 9, 9, 9, 15, 9, 15, 15)
+                
+                'dyn receipts cols (optional)
+                dynCol = Array(Null, Null, Null, Null, Null, 9, 9, 9, Null, 9, 9, 9, Null, 9, 9, Null, Null, Null, Null, Null, 9, Null, 9, 9)
+                
+                'pac receipts cols (optional)
+                pacCol = Array(Null, Null, Null, Null, Null, 12, 12, 12, Null, 12, 12, 12, Null, 12, 12, Null, Null, Null, Null, Null, 12, Null, 12, 12)
+                
+                'qtyCol + 5 = eta col
+                                
+                
+                'Populates main data onto each spread sheet
+                If (conForePart Like ffpn(rCount) + "*") Or (conForePart Like pacffpn(rCount) + "*") Then
+                    Data sheetName(rCount), rowCounter(rCount), conForePart, bppn(rCount), conForeDate, "FLEXFAB", "FORECAST", "xxxx", "xxxx", conForeQty
+                    rowCounter(rCount) = rowCounter(rCount) + 1
+                End If
+                
+                If (dffpn Like ffpn(rCount) + "*") Or (dffpn Like pacffpn(rCount) + "*") Then
+                    Data sheetName(rCount), rowCounter(rCount), dffpn, bppn(rCount), dpdd, dsoldto, dshipto, dcord, dord, dqty
+                    rowCounter(rCount) = rowCounter(rCount) + 1
+                End If
+                                                       
+            Next conDataCount
+            
+            'Populate receipt data
+            For qtyRowCount = 4 To 30
+                Set qty = Sheets(sheetName(rCount)).Cells(qtyRowCount, qtyCol(rCount))
+                Set eta = Sheets(sheetName(rCount)).Cells(qtyRowCount, qtyCol(rCount) + 5)
+                
+                If Not (IsEmpty(qty)) Then
+                    Receipt_Data sheetName(rCount), rowCounter(rCount), ffpn(rCount), bppn(rCount), eta, qty, allCol(rCount), dynCol(rCount), pacCol(rCount)
+                    rowCounter(rCount) = rowCounter(rCount) + 1
+                    End If
+            Next qtyRowCount
+            
+            'Set different part numbers for PAC3003 and PAC7731-0001
+            For sCount = 4 To 100
+                If (Sheets("DYN3003P PAC3003").Cells(sCount, 1) Like "PAC3003*") Then
+                    Sheets("DYN3003P PAC3003").Cells(sCount, 2) = "D1029-4494"
+                End If
+            Next sCount
+            
+    Next rCount
+    
+    Call custom_sort
+End Sub
+
+Sub custom_sort()
+
+    'ARRAYS
+    'sheet names (24)
+            sheetNameString = "DYN1087P PAC1087,DYN1090P PAC1090,DYN1247P PAC1247,DYN1123P PAC1123,DYN1126P PAC1126,DYN1134P PAC1134,DYN1255P PAC1255," _
+                                 & "DYN1272P PAC1272,DYN1274P PAC1274,DYN1324P PAC1324,DYN1354P PAC1354,DYN1358P PAC1358,DYN1359P PAC1359,DYN1366P PAC1366," _
+                                 & "DYN1372P PAC1372,DYN1378P PAC1378,DYN1380P PAC1380,DYN1383P PAC1383,DYN1384P PAC1384,DYN1393P PAC1393,DYN1415P PAC1415," _
+                                 & "DYN1428P PAC1428,DYN1442P PAC1442,DYN3003P PAC3003"
+            sheetName = Split(sheetNameString, ",")
+    
+    'all receipts cols
+    allSelCol = Array(10, 10, 10, 10, 10, 16, 16, 16, 10, 16, 16, 16, 10, 16, 16, 10, 10, 10, 10, 10, 16, 10, 16, 16)
+    
+    
+    For aCount = 0 To 23
+        Set cell1 = Sheets(sheetName(aCount)).Cells(4, 1)
+        Set cell3 = Sheets(sheetName(aCount)).Cells(4, 3)
+        
+        'Set variables for section to be selected
+        Dim rowCount2 As Integer
+        
+        For rowCount = 4 To 150
+            'Determine row where selection should stop
+            If IsEmpty(Sheets(sheetName(aCount)).Cells(rowCount, 1)) Then
+                rowCount2 = rowCount - 1
+                Set cell2 = Sheets(sheetName(aCount)).Cells(rowCount2, allSelCol(aCount))
+                Set cell4 = Sheets(sheetName(aCount)).Cells(rowCount2, 3)
+            Exit For
+            End If
+        Next rowCount
+        
+        'Select cells to be sorted
+        Sheets(sheetName(aCount)).Select
+        Sheets(sheetName(aCount)).Range(cell1, cell2).Select
+        
+        ActiveWorkbook.Worksheets(sheetName(aCount)).Sort.SortFields.Clear
+        ActiveWorkbook.Worksheets(sheetName(aCount)).Sort.SortFields.Add Key:=Range(cell3, cell4), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        With ActiveWorkbook.Worksheets(sheetName(aCount)).Sort
+            .SetRange Range(cell1, cell2)
+            .Header = xlGuess
+            .MatchCase = False
+            .Orientation = xlTopToBottom
+            .SortMethod = xlPinYin
+            .Apply
+        End With
+                
+    Next aCount
+    
+    Call Populate_inv
+
+End Sub
+
+Public Sub Populate_inv()
+
+    'ARRAYS
+    'sheet names (24)
+            sheetNameString = "DYN1087P PAC1087,DYN1090P PAC1090,DYN1247P PAC1247,DYN1123P PAC1123,DYN1126P PAC1126,DYN1134P PAC1134,DYN1255P PAC1255," _
+                                 & "DYN1272P PAC1272,DYN1274P PAC1274,DYN1324P PAC1324,DYN1354P PAC1354,DYN1358P PAC1358,DYN1359P PAC1359,DYN1366P PAC1366," _
+                                 & "DYN1372P PAC1372,DYN1378P PAC1378,DYN1380P PAC1380,DYN1383P PAC1383,DYN1384P PAC1384,DYN1393P PAC1393,DYN1415P PAC1415," _
+                                 & "DYN1428P PAC1428,DYN1442P PAC1442,DYN3003P PAC3003"
+            sheetName = Split(sheetNameString, ",")
+    
+    'all receipts cols
+    allColffinv = Array(9, 9, 9, 9, 9, 15, 15, 15, 9, 15, 15, 15, 9, 15, 15, 9, 9, 9, 9, 9, 15, 9, 15, 15)
+    
+    'dyn receipts cols (optional)
+    dynColffinv = Array(Null, Null, Null, Null, Null, 9, 9, 9, Null, 9, 9, 9, Null, 9, 9, Null, Null, Null, Null, Null, 9, Null, 9, 9)
+    
+    'pac receipts cols (optional)
+    pacColffinv = Array(Null, Null, Null, Null, Null, 12, 12, 12, Null, 12, 12, 12, Null, 12, 12, Null, Null, Null, Null, Null, 12, Null, 12, 12)
+    
+    For bCount = 0 To 23
+        For cCount = 4 To 75
+            Set ffinv = Sheets(sheetName(bCount)).Cells(cCount, allColffinv(bCount))
+            
+            'goes through the ffinv col and copies the flexfab inventory total to the top cell in the column
+            If Not (IsEmpty(ffinv)) Then
+                Sheets(sheetName(bCount)).Cells(4, allColffinv(bCount)) = ffinv.Value
+            Exit For
+            End If
+        Next cCount
+        
+        For eCount = 4 To 75
+            'finds the first line of PAC and copies the ffinv total into that line in the cell of the PAC column
+            If (Sheets(sheetName(bCount)).Cells(eCount, 1).Value Like "PAC*") And (Not (IsNull(dynColffinv(bCount)))) Then
+                Sheets(sheetName(bCount)).Cells(eCount, pacColffinv(bCount)) = ffinv.Value
+                Exit For
+            End If
+        Next eCount
+        
+        For fCount = 4 To 75
+            'same as pac column but for dyn
+            If (Sheets(sheetName(bCount)).Cells(fCount, 1).Value Like "DYN*") And (Not (IsNull(dynColffinv(bCount)))) Then
+                Sheets(sheetName(bCount)).Cells(fCount, dynColffinv(bCount)) = ffinv.Value
+                Exit For
+            End If
+        Next fCount
+    Next bCount
+    
+End Sub
