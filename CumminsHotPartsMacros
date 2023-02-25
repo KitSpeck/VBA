@@ -1,0 +1,36 @@
+/*populates data to a different worksheet without empty lines*/
+
+Sub transfer_data()
+'
+' transfer_data Macro
+'
+' Keyboard Shortcut: Ctrl+Shift+Q
+'
+
+'Demand row counter that starts at 4
+Dim demandCounter As Integer
+demandCounter = 4
+
+For dataCounter = 2 To 2000
+    Set ffpn = Sheets("Data").Cells(dataCounter, 1)
+    Set bppn = Sheets("Data").Cells(dataCounter, 2)
+    Set pdd = Sheets("Data").Cells(dataCounter, 3)
+    Set soldTo = Sheets("Data").Cells(dataCounter, 4)
+    Set shipTo = Sheets("Data").Cells(dataCounter, 5)
+    Set ord = Sheets("Data").Cells(dataCounter, 7)
+    Set qty = Sheets("Data").Cells(dataCounter, 8)
+    
+    'copy and paste values
+    If Not (bppn = "                         ") Then
+        Sheets("Demand").Cells(demandCounter, 1).Value = ffpn.Value
+        Sheets("Demand").Cells(demandCounter, 2).Value = bppn.Value
+        Sheets("Demand").Cells(demandCounter, 3).Value = pdd.Value
+        Sheets("Demand").Cells(demandCounter, 4).Value = soldTo.Value
+        Sheets("Demand").Cells(demandCounter, 5).Value = shipTo.Value
+        Sheets("Demand").Cells(demandCounter, 7).Value = ord.Value
+        Sheets("Demand").Cells(demandCounter, 8).Value = qty.Value
+        demandCounter = demandCounter + 1
+    End If
+Next dataCounter
+
+End Sub
